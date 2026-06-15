@@ -1,0 +1,357 @@
+{
+  "name": "assembly_ai_report_generator",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.assemblyai.com/v2/upload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "0e722ef4510c43f98b32227b1c9ccd68"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "={{ Object.keys($binary)[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        -100
+      ],
+      "id": "55cb6634-a4f7-4c41-b9b9-f6edadb9ff4c",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.assemblyai.com/v2/transcript",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "0e722ef4510c43f98b32227b1c9ccd68"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "audio_url",
+              "value": "={{ $json.upload_url }}"
+            },
+            {
+              "name": "speaker_labels",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        -100
+      ],
+      "id": "51d23eb6-21d0-48dc-93b4-d9db35424d04",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.assemblyai.com/v2/transcript/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "0e722ef4510c43f98b32227b1c9ccd68"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        100
+      ],
+      "id": "b81bd93a-e459-4fbd-82aa-f4a2a11c6715",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "85d41a0e-e0f2-4baa-84db-52ee31d81803",
+              "name": "set",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        900,
+        -100
+      ],
+      "id": "ed2824ae-06d6-4182-b529-bd0ad232d95f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the full transcript text to analyze: {{ $json.set }}",
+        "options": {
+          "systemMessage": "You are a professional business report generator. Analyze the user's provided meeting transcript and generate a structured report. The report MUST contain the following sections:\n1. Key Decisions Made\n2. Action Items (with the owner and due date if mentioned)\n3. General Discussion Summary"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1120,
+        -100
+      ],
+      "id": "3f3c9c39-9618-4334-8133-f7c4aa8e6f29",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        120
+      ],
+      "id": "9dacc619-b838-4b99-95b2-a780260fdf43",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "4pk1RkXWDnFz6YEU",
+          "name": "OpenAi account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Audio_report_generator",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name"
+            },
+            {
+              "fieldLabel": "Mail address",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Upload file",
+              "fieldType": "file",
+              "acceptFileTypes": ".mp3, .mp4, .wav, .aac"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        -100
+      ],
+      "id": "89344503-ef7b-4f37-9ec7-bafffce77faf",
+      "name": "On form submission",
+      "webhookId": "dda5b256-51a2-4a48-8600-2268f0737e6d"
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        -100
+      ],
+      "id": "777716fc-0864-474b-a102-c83ec4bc154f",
+      "name": "Wait",
+      "webhookId": "e03b07d8-8340-4af2-970e-13cbe73113c6"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1480,
+        -100
+      ],
+      "id": "deb4127a-7409-412a-ae61-9f517c83e0bf",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "fromEmail": "selva@digimabble.com",
+        "toEmail": "={{ $('On form submission').item.json[\"Mail address\"] }}",
+        "subject": "Summary of Recorded Meeting",
+        "emailFormat": "text",
+        "text": "Please find attached the summary of our recorded meeting.",
+        "options": {
+          "attachments": "={{ Object.keys($binary)[0] }}"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1700,
+        -100
+      ],
+      "id": "38220dca-1c8c-42bb-9308-21f16c66a44e",
+      "name": "Send Email",
+      "webhookId": "493c6ad7-3f8f-4137-9def-98a398218968",
+      "credentials": {
+        "smtp": {
+          "id": "cJAYTHS55rtRAXCo",
+          "name": "SMTP account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a302f88e-549b-4afb-9930-0871b1d40817",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f6760e8a2ec66078949fe090b044c1caef5111e63de7b7e9a82b39f6d8239835"
+  },
+  "id": "h0HD2jIky7iAptot",
+  "tags": []
+}
